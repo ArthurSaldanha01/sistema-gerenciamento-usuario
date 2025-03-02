@@ -1,15 +1,14 @@
-using backend.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace backend.Repositories
 {
     public interface IUserRepository
     {
-        Task<IEnumerable<User>> GetAllUsers();
-        Task<User?> GetUserById(int id);
-        Task AddUser(User users);
-        Task UpdateUser(User user);
-        Task DeleteUser(int id);
+        Task<IEnumerable<IdentityUser>> GetAllUsers();
+        Task<IdentityUser?> GetUserById(string id);
+        Task<IdentityUser?> GetUserByEmail(string email);
+        Task<bool> AddUser(IdentityUser user, string password);
+        Task<bool> UpdateUser(IdentityUser user);
+        Task<bool> DeleteUser(string id);
     }
 }
-
-

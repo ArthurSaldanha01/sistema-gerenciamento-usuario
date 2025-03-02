@@ -1,48 +1,60 @@
 using backend.Data;
-using backend.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Repositories
 {
     public class UserRepository : IUserRepository
     {
+        private readonly UserManager<IdentityUser> _userManager;
         private readonly AppDbContext _context;
 
-        public UserRepository(AppDbContext context)
+        public UserRepository(UserManager<IdentityUser> userManager, AppDbContext context)
         {
+            _userManager = userManager;
             _context = context;
         }
 
-        public async Task<IEnumerable<User>> GetAllUsers()
+        public async Task<IEnumerable<IdentityUser>> GetAllUsers()
         {
             return await _context.Users.ToListAsync();
         }
 
-        public async Task<User?> GetUserById(int id)
+        public async Task<IdentityUser?> GetUserById(string id)
         {
-            return await _context.Users.FindAsync(id);
+            return await _userManager.FindByIdAsync(id);
         }
 
-        public async Task AddUser(User user)
+        public async Task<IdentityUser?> GetUserByEmail(string email)
         {
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
+            return await _userManager.FindByEmailAsync(email);
         }
 
-        public async Task UpdateUser(User user)
+        public async Task<bool> AddUser(IdentityUser user, string password)
         {
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+            var result = await _userManager.CreateAsync(user, password);
+            return result.Succeeded;
         }
 
-        public async Task DeleteUser(int id)
+        public async Task<bool> UpdateUser(IdentityUser user)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user != null)
-            {
-                _context.Users.Remove(user);
-                await _context.SaveChangesAsync();
-            }
+            var existingUser = await _userManager.FindByIdAsync(user.Id);
+            if (existingUser == null) return false;
+
+            existingUser.Email = user.Email;
+            existingUser.UserName = user.UserName;
+
+            var result = await _userManager.UpdateAsync(existingUser);
+            return result.Succeeded;
         }
-    }   
+
+        public async Task<bool> DeleteUser(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return false;
+
+            var result = await _userManager.DeleteAsync(user);
+            return result.Succeeded;
+        }
+    }
 }

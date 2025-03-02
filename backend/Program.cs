@@ -1,21 +1,19 @@
-using Microsoft.EntityFrameworkCore;
+Ôªøusing Microsoft.EntityFrameworkCore;
 using backend.Data;
-using Microsoft.OpenApi.Models;
 using backend.Repositories;
 using backend.Services;
+using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Sistema de Gerenciamento de Usu·rios",
-        Version = "v1",
-        Description = "API RESTful para gerenciamento de usu·rios com autenticaÁ„o JWT"
-    });
-});
+var secretKey = builder.Configuration["JwtSettings:SecretKey"]
+    ?? throw new Exception("JWT SecretKey n√£o foi configurado corretamente!");
+
+var key = Encoding.ASCII.GetBytes(secretKey);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
@@ -24,19 +22,92 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
+builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+        ValidAudience = builder.Configuration["JwtSettings:Audience"],
+        ValidateLifetime = true
+    };
+});
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Sistema de Gerenciamento de Usu√°rios",
+        Version = "v1",
+        Description = "API RESTful para gerenciamento de usu√°rios com autentica√ß√£o JWT"
+    });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Autentica√ß√£o JWT. Insira o token no campo abaixo:\nExemplo: Bearer SEU_TOKEN_AQUI",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] { }
+        }
+    });
+});
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<TokenService>();
 
-builder.Services.AddControllers(); 
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    await RoleInitializer.InitializeRoles(roleManager);
+}
+
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sistema de Gerenciamento de Usu·rios v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sistema de Gerenciamento de Usu√°rios v1");
         c.RoutePrefix = string.Empty;
     });
 }
