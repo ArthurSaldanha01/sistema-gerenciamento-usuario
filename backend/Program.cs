@@ -47,6 +47,10 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Configuration
+       .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+       .AddUserSecrets<Program>();
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddSwaggerGen(c =>
@@ -83,12 +87,27 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:4300")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+});
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TokenService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddTransient<IEmailRepository, EmailRepository>();
+builder.Services.AddTransient<EmailService>();
+
 
 var app = builder.Build();
 
@@ -99,6 +118,9 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseRouting();
+
+app.UseCors("AllowAngular");
+
 app.UseAuthentication();
 app.UseAuthorization();
 

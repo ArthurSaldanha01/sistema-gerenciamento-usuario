@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace backend.Controllers
 {
@@ -11,11 +12,13 @@ namespace backend.Controllers
     {
         private readonly TokenService _tokenService;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly EmailService _emailService;
 
-        public AuthController(TokenService tokenService, UserManager<IdentityUser> userManager)
+        public AuthController(TokenService tokenService, UserManager<IdentityUser> userManager, EmailService emailService)
         {
             _tokenService = tokenService;
             _userManager = userManager;
+            _emailService = emailService;
         }
 
         [HttpPost("login")]
@@ -41,7 +44,10 @@ namespace backend.Controllers
                 return NotFound("Usuário não encontrado.");
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            return Ok(new { Token = token });
+
+            await _emailService.SendResetPasswordEmailAsync(request.Email, token);
+
+            return Ok(new { Message = "Email de redefinição enviado." });
         }
 
         [HttpPost("reset-password")]
