@@ -1,0 +1,18 @@
+<div class="register-container">
+  <h2>Cadastro</h2>
+  <form (ngSubmit)="register()">
+    <input type="email" [(ngModel)]="email" name="email" placeholder="E-mail" required />
+    <input type="password" [(ngModel)]="password" (ngModelChange)="validatePassword()" name="password" placeholder="Senha" required />
+
+    <div class="password-validations">
+      <p [class.valid]="passwordValidations.minLength">Mínimo 6 caracteres</p>
+      <p [class.valid]="passwordValidations.uppercase">Pelo menos uma letra maiúscula</p>
+      <p [class.valid]="passwordValidations.lowercase">Pelo menos uma letra minúscula</p>
+      <p [class.valid]="passwordValidations.number">Pelo menos um número</p>
+      <p [class.valid]="passwordValidations.specialChar">Pelo menos um caractere especial</p>
+    </div>
+
+    <button type="submit">Cadastrar</button>
+  </form>
+  <a routerLink="/login" class="back-button">Voltar para Login</a>
+</div>

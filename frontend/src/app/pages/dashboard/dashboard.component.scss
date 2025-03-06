@@ -1,0 +1,23 @@
+.dashboard-container {
+    max-width: 600px;
+    margin: 20px auto;
+    text-align: center;
+  
+    h2 {
+      color: #333;
+    }
+  
+    p {
+      font-size: 18px;
+    }
+  
+    button {
+      margin-top: 20px;
+      padding: 10px 15px;
+      background-color: red;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  }
+  

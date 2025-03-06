@@ -1,0 +1,15 @@
+<div class="login-container">
+    <h2>Login</h2>
+    <input type="email" [(ngModel)]="email" placeholder="E-mail" required />
+    <input type="password" [(ngModel)]="password" placeholder="Senha" required />
+    <button (click)="login()">Entrar</button>
+
+    <p class="forgot-password-link">
+      <a routerLink="/forgot-password">Esqueceu sua senha?</a>
+    </p>
+
+    <p class="register-link">
+      Não tem uma conta? <a routerLink="/register">Registre-se</a>
+    </p>
+  </div>
+  
