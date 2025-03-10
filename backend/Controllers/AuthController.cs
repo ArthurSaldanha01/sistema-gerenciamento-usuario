@@ -1,4 +1,5 @@
-﻿using backend.Services;
+﻿using backend.Models;
+using backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
@@ -11,10 +12,10 @@ namespace backend.Controllers
     public class AuthController : ControllerBase
     {
         private readonly TokenService _tokenService;
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly EmailService _emailService;
 
-        public AuthController(TokenService tokenService, UserManager<IdentityUser> userManager, EmailService emailService)
+        public AuthController(TokenService tokenService, UserManager<ApplicationUser> userManager, EmailService emailService)
         {
             _tokenService = tokenService;
             _userManager = userManager;
