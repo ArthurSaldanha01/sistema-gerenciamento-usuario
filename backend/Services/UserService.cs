@@ -1,49 +1,52 @@
 using Microsoft.AspNetCore.Identity;
 using System.Text.RegularExpressions;
 using backend.Repositories;
+using backend.Models;
+using backend.DTOs;
 
 namespace backend.Services
 {
     public class UserService
     {
         private readonly IUserRepository _userRepository;
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
 
-        public UserService(IUserRepository userRepository, UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager)
+        public UserService(IUserRepository userRepository, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             _userRepository = userRepository;
             _userManager = userManager;
             _roleManager = roleManager;
         }
 
-        public async Task<IEnumerable<IdentityUser>> GetAllUsers()
+        public async Task<IEnumerable<ApplicationUser>> GetAllUsers()
         {
             return await _userRepository.GetAllUsers();
         }
 
-        public async Task<IdentityUser?> GetUserById(string id)
+        public async Task<ApplicationUser?> GetUserById(string id)
         {
             return await _userRepository.GetUserById(id);
         }
 
-        public async Task<IdentityUser?> GetUserByEmail(string email)
+        public async Task<ApplicationUser?> GetUserByEmail(string email)
         {
             return await _userRepository.GetUserByEmail(email);
         }
 
-        public async Task<bool> AddUser(string email, string password, string role = "User")
+ 
+        public async Task<bool> AddUser(ApplicationUser user, string password, string role = "User")
         {
-            Console.WriteLine($"Tentativa de cadastro - Email: {email}, Role: {role}");
+            Console.WriteLine($"Tentativa de cadastro - Email: {user.Email}, Role: {role}");
 
-            var existingUser = await _userManager.FindByEmailAsync(email);
+            var existingUser = await _userManager.FindByEmailAsync(user.Email);
             if (existingUser != null)
             {
                 Console.WriteLine("Erro: Usuário já existe.");
                 return false;
             }
 
-            if (!IsValidEmail(email))
+            if (!IsValidEmail(user.Email))
             {
                 Console.WriteLine("Erro: E-mail inválido.");
                 return false;
@@ -55,13 +58,7 @@ namespace backend.Services
                 return false;
             }
 
-            var identityUser = new IdentityUser
-            {
-                UserName = email,
-                Email = email
-            };
-
-            var result = await _userManager.CreateAsync(identityUser, password);
+            var result = await _userManager.CreateAsync(user, password);
             if (!result.Succeeded)
             {
                 Console.WriteLine("Erro ao criar usuário: " + string.Join(", ", result.Errors.Select(e => e.Description)));
@@ -74,24 +71,31 @@ namespace backend.Services
                 await _roleManager.CreateAsync(new IdentityRole(role));
             }
 
-            await _userManager.AddToRoleAsync(identityUser, role);
+            await _userManager.AddToRoleAsync(user, role);
             Console.WriteLine("Usuário cadastrado com sucesso!");
             return true;
         }
 
-
-        public async Task<bool> UpdateUser(string id, string newEmail)
+ 
+        public async Task<bool> UpdateUser(string id, UpdateProfileRequest request)
         {
             var existingUser = await _userManager.FindByIdAsync(id);
-            if (existingUser == null || !IsValidEmail(newEmail))
+            if (existingUser == null || !IsValidEmail(request.NewEmail))
                 return false;
 
-            var emailOwner = await _userManager.FindByEmailAsync(newEmail);
+ 
+            var emailOwner = await _userManager.FindByEmailAsync(request.NewEmail);
             if (emailOwner != null && emailOwner.Id != id)
                 return false;
 
-            existingUser.UserName = newEmail;
-            existingUser.Email = newEmail;
+            existingUser.UserName = request.NewEmail;
+            existingUser.Email = request.NewEmail;
+            existingUser.FirstName = request.FirstName;
+            existingUser.LastName = request.LastName;
+            existingUser.DateOfBirth = request.DateOfBirth;
+            existingUser.Address = request.Address;
+            existingUser.Gender = request.Gender;
+            existingUser.JobTitle = request.JobTitle;
 
             var result = await _userManager.UpdateAsync(existingUser);
             return result.Succeeded;
